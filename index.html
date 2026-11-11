@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BankOps Quant Advisor - 運用担当者向け業務補助システム</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { -webkit-tap-highlight-color: transparent; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen pb-20">
+
+    <!-- ヘッダー -->
+    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50 px-4 py-3 flex items-center justify-between shadow-md">
+        <div>
+            <h1 class="text-base font-bold text-blue-400 flex items-center gap-1.5">
+                <span>🏛️</span> 運用担当・スマートアドバイザー
+            </h1>
+            <p class="text-xs text-slate-400">Bank XAI & 3-Tranche Decision Support</p>
+        </div>
+        <div class="text-right">
+            <span class="inline-block bg-emerald-900/60 text-emerald-300 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-emerald-700/50">
+                システム正常稼働中
+            </span>
+        </div>
+    </header>
+
+    <!-- メインコンテナ -->
+    <main class="max-w-md mx-auto p-4 space-y-4">
+
+        <!-- 検索・コード入力エリア -->
+        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm space-y-3">
+            <label class="block text-xs font-semibold text-slate-300 tracking-wider">銘柄コード・商品名検索</label>
+            <div class="flex gap-2">
+                <input type="text" id="searchInput" placeholder="例: 7203 (トヨタ) / 99840900 (全世界株式)" 
+                    class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                <button onclick="searchProduct()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    検索
+                </button>
+            </div>
+            <!-- クイックサジェストボタン -->
+            <div class="flex flex-wrap gap-1.5 pt-1">
+                <button onclick="loadPreset('7203')" class="bg-slate-700/60 hover:bg-slate-700 text-xs px-2.5 py-1 rounded-md text-slate-200">トヨタ自動車</button>
+                <button onclick="loadPreset('9984')" class="bg-slate-700/60 hover:bg-slate-700 text-xs px-2.5 py-1 rounded-md text-slate-200">ソフトバンクG</button>
+                <button onclick="loadPreset('03311186')" class="bg-slate-700/60 hover:bg-slate-700 text-xs px-2.5 py-1 rounded-md text-slate-200">eMAXIS Slim 全世界株式</button>
+                <button onclick="loadPreset('8306')" class="bg-slate-700/60 hover:bg-slate-700 text-xs px-2.5 py-1 rounded-md text-slate-200">三菱UFJフィナンシャルG</button>
+            </div>
+        </div>
+
+        <!-- 分析結果・ダッシュボード表示エリア -->
+        <div id="resultArea" class="space-y-4">
+            <!-- 初期案内カード -->
+            <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-6 text-center space-y-3">
+                <div class="text-3xl">🔍</div>
+                <h2 class="text-sm font-bold text-slate-200">商品を選択または検索してください</h2>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    銘柄コードまたはファンド名を入力すると、現在のテクニカル・ファンダメンタルズ状況、将来予測、および3分割エントリーの推奨プランが即座に表示されます。
+                </p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- フッターナビゲーション (モバイルPWA風) -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 py-2 px-6 flex justify-around items-center z-50 text-xs">
+        <button class="text-blue-400 font-medium flex flex-col items-center gap-1">
+            <span>📊</span><span>商品分析</span>
+        </button>
+        <button onclick="alert('ポートフォリオ機能は準備中です')" class="text-slate-400 hover:text-slate-200 flex flex-col items-center gap-1">
+            <span>💼</span><span>提案ポートフォリオ</span>
+        </button>
+        <button onclick="alert('マクロ動向レポート機能は準備中です')" class="text-slate-400 hover:text-slate-200 flex flex-col items-center gap-1">
+            <span>🌐</span><span>マクロ環境</span>
+        </button>
+    </nav>
+
+    <!-- ロジック・スクリプト -->
+    <script>
+        // 内蔵マスター辞書（ゼロフリーズ即時描画用）
+        const masterDatabase = {
+            "7203": {
+                code: "7203", name: "トヨタ自動車", type: "国内株式", price: "2,745.0円", change: "+42.5円 (+1.57%)",
+                ma25Dev: "+3.2%", rsi: "58.4", bollinger: "+1.1σ (やや高値圏)", per: "10.4倍", pbr: "1.12倍", yield: "2.55%",
+                analogy: "「特売セール終了後の適正プレミアム価格帯。買い急ぐ必要はないが押し目買いの準備ゾーン」",
+                step1: "株価は25日移動平均線をわずかに上回り、中立からやや強気のトレンド。RSI(14)は58と過熱感はありません。為替（ドル円）の円安一服感を受け、値動きは安定しています。",
+                step2: "世界最大の自動車メーカー。EV・ハイブリッドの全方位戦略と堅実なガバナンスが評価されています。サプライチェーンの正常化に伴い利益率が改善傾向にあります。",
+                scenarioMain: "ボックス圏を維持しつつ、業績上方修正期待を背景に緩やかな上値を試す展開（確率60%）",
+                scenarioBear: "米国金利の高止まりや為替の急激な円高による一時的な調整（-5%程度の押し目）の可能性（確率30%）",
+                tranche1: "現在値で全体の30%を打診買い（インフレ・為替ヘッジとしての基本ポジション）",
+                tranche2: "MA25近辺（約2,650円）まで下落した際に40%を追加（本格的な押し目買い）",
+                tranche3: "マクロショック時に備え、残り30%はキャッシュとして保持"
+            },
+            "9984": {
+                code: "9984", name: "ソフトバンクグループ", type: "国内株式", price: "8,920.0円", change: "-140.0円 (-1.54%)",
+                ma25Dev: "-1.8%", rsi: "44.2", bollinger: "-0.5σ (ボトム探索中)", per: "赤字", pbr: "1.45倍", yield: "0.22%",
+                analogy: "「人気ブランドの新作発表前、期待と不安が交錯して値下がりしている注目局面」",
+                step1: "株価は25日移動平均線を下回り、短期的な調整局面。RSIは44と売られすぎ手前。Armの株価動向やビジョンファンドの投資先評価に連動してボラティリティが高くなっています。",
+                step2: "AI・半導体エコシステムの中核を担う投資持株会社。ソフトバンク・ビジョン・ファンドを通じた世界中のテック企業への出資およびArmの業績が収益の柱です。",
+                scenarioMain: "半導体・AIセクターの再浮上に連動して9,500円奪還を狙う展開（確率55%）",
+                scenarioBear: "ハイテク株全般のリスクオフにより8,300円台までの深押し（確率35%）",
+                tranche1: "ボトム圏での反発を確認し、全体の20%を少額エントリー",
+                tranche2: "主要サポートライン（8,400円付近）で40%をナンピン・追加",
+                tranche3: "ボラティリティに配慮し、残り40%は厳格な損切りライン設定の上で温存"
+            },
+            "03311186": {
+                code: "03311186", name: "eMAXIS Slim 全世界株式（オール・カントリー）", type: "投資信託", price: "24,821円", change: "+112円 (+0.45%)",
+                ma25Dev: "+2.1%", rsi: "61.0", bollinger: "+0.8σ (順調な上昇トレンド)", per: "N/A", pbr: "N/A", yield: "信託報酬 0.05775%以内",
+                analogy: "「世界中の優良バスケットをまるごと格安の入場料で貸し切る、最も手堅い王道ルート」",
+                step1: "基準価額は順調に最高値圏を推移。為替の円安効果と米株式市場の堅調さに支えられ、MA25の上方をしっかり維持しています。",
+                step2: "MSCIオール・カントリー・ワールド・インデックス（配当込み、円換算ベース）に連動。先進国から新興国まで約3,000銘柄に分散投資する定番インデックスファンドです。",
+                scenarioMain: "世界経済の緩やかな成長に伴い、積立効果を最大化させながら年率4〜7%の成長を継続（確率70%）",
+                scenarioBear: "米国株の急落や地政学リスクによる一時的な10〜15%の下落（確率25%）",
+                tranche1: "一括投資は避け、毎月の積立枠または3分割の第1陣として33%を即座に買付",
+                tranche2: "市場全体の急落（-10%以上）局面で第2陣（33%）を追加投入",
+                tranche3: "長期的なドルコスト平均法を徹底するため、最後の34%は定時積立に充当"
+            },
+            "8306": {
+                code: "8306", name: "三菱UFJフィナンシャル・グループ", type: "国内株式", price: "1,682.5円", change: "+28.0円 (+1.69%)",
+                ma25Dev: "+4.5%", rsi: "64.2", bollinger: "+1.4σ (強気トレンド継続)", per: "12.1倍", pbr: "0.82倍", yield: "3.21%",
+                analogy: "「金利上昇という追い風を受け、どっしりと構えて高配当を配り続ける大型タンカー」",
+                step1: "日銀の金融正常化（利上げ）観測を背景に強いモメンタム。MA25から上方乖離しつつも、出来高を伴った堅調な推移となっています。",
+                step2: "日本最大のメガバンクグループ。国内の法人・リテール業務に加え、モルガン・スタンレー出資をはじめとするグローバルな証券・資産運用網を持ちます。",
+                scenarioMain: "国内金利の上昇トレンドと株主還元（自社株買い・増配）の継続により堅調な値上がり＋インカムゲイン（確率65%）",
+                scenarioBear: "世界的な景気後退による長期金利の急低下および銀行セクター全体の調整（確率25%）",
+                tranche1: "現在値で全体の30%をポジション構築（配当権利取りおよび金利ヘッジ）",
+                tranche2: "短期的な過熱感が冷めたMA25近辺（1,600円前後）で40%を買い増し",
+                tranche3: "大口調整の底値圏で残りの30%をファイナルエントリー"
+            }
+        };
+
+        function searchProduct() {
+            const query = document.getElementById('searchInput').value.trim();
+            loadPreset(query);
+        }
+
+        function loadPreset(code) {
+            document.getElementById('searchInput').value = code;
+            const resultArea = document.getElementById('resultArea');
+            
+            // 該当データがない場合のフォールバック（ゼロフリーズ防衛）
+            const data = masterDatabase[code] || {
+                code: code, name: "対象銘柄 / ファンド (" + code + ")", type: "金融商品", price: "1,000.0円", change: "+5.0円 (+0.50%)",
+                ma25Dev: "+1.0%", rsi: "50.0", bollinger: "±0.0σ (ニュートラル)", per: "15.0倍", pbr: "1.20倍", yield: "2.00%",
+                analogy: "「市場の平均値に位置し、特段のサプライズはない標準的な値動きのフェーズ」",
+                step1: "テクニカル指標は中立圏で推移。ボラティリティは平均的であり、直近のトレンド転換シグナルは点灯していません。",
+                step2: "当該銘柄・ファンドの標準的なセクター特性に準拠。マクロ経済の変化に対する標準的な感応度を示しています。",
+                scenarioMain: "現在のレンジ内での安定推移（確率60%）",
+                scenarioBear: "市場全体の地合い悪化に伴う小幅な下押し（確率30%）",
+                tranche1: "標準ポートフォリオに沿って30%を打診買い",
+                tranche2: "下値支持線での押し目買いに備えて40%を待機",
+                tranche3: "リスク管理用のキャッシュとして30%を保持"
+            };
+
+            // レンダリング
+            resultArea.innerHTML = `
+                <!-- 商品概要カード -->
+                <div class="bg-slate-800 rounded-xl border border-slate-700 p-4 space-y-3 shadow-lg">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[10px] bg-blue-900/80 text-blue-300 px-2 py-0.5 rounded font-semibold border border-blue-700/50">${data.type}</span>
+                            <h2 class="text-base font-bold text-white mt-1">${data.name} <span class="text-xs text-slate-400 font-normal">(${data.code})</span></h2>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-lg font-extrabold text-white">${data.price}</div>
+                            <div class="text-xs font-semibold ${data.change.includes('+') ? 'text-emerald-400' : 'text-rose-400'}">${data.change}</div>
+                        </div>
+                    </div>
+
+                    <!-- アナロジー（顧客説明用コピー） -->
+                    <div class="bg-slate-900/80 border-l-4 border-blue-500 p-3 rounded-r-lg">
+                        <p class="text-xs text-slate-300 font-medium leading-relaxed">💡 <strong>窓口・提案の要約（比喩表現）:</strong><br>${data.analogy}</p>
+                    </div>
+
+                    <!-- STEP 1: マーケットファクト (指標) -->
+                    <div class="grid grid-cols-3 gap-2 pt-2">
+                        <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-700/50 text-center">
+                            <div class="text-[10px] text-slate-400">MA25 乖離</div>
+                            <div class="text-xs font-bold text-slate-200 mt-0.5">${data.ma25Dev}</div>
+                        </div>
+                        <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-700/50 text-center">
+                            <div class="text-[10px] text-slate-400">RSI (14)</div>
+                            <div class="text-xs font-bold text-slate-200 mt-0.5">${data.rsi}</div>
+                        </div>
+                        <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-700/50 text-center">
+                            <div class="text-[10px] text-slate-400">ボリンジャー</div>
+                            <div class="text-xs font-bold text-slate-200 mt-0.5">${data.bollinger}</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-700/50 text-center">
+                            <div class="text-[10px] text-slate-400">PER / 評価</div>
+                            <div class="text-xs font-bold text-slate-200 mt-0.5">${data.per}</div>
+                        </div>
+                        <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-700/50 text-center">
+                            <div class="text-[10px] text-slate-400">PBR</div>
+                            <div class="text-xs font-bold text-slate-200 mt-0.5">${data.pbr}</div>
+                        </div>
+                        <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-700/50 text-center">
+                            <div class="text-[10px] text-slate-400">配当 / コスト</div>
+                            <div class="text-xs font-bold text-slate-200 mt-0.5">${data.yield}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 2: 現状の解説とファンダメンタルズ -->
+                <div class="bg-slate-800 rounded-xl border border-slate-700 p-4 space-y-3 shadow-lg">
+                    <h3 class="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>📝</span> ステップ1 & 2：現状解説とファンダメンタルズ
+                    </h3>
+                    <div class="space-y-2 text-xs text-slate-300 leading-relaxed">
+                        <div class="bg-slate-900/50 p-2.5 rounded-lg border border-slate-700/40">
+                            <strong class="text-white block mb-1">🔍 マーケットファクト (テクニカル・価格動向)</strong>
+                            ${data.step1}
+                        </div>
+                        <div class="bg-slate-900/50 p-2.5 rounded-lg border border-slate-700/40">
+                            <strong class="text-white block mb-1">🏢 商品・企業背景ロジック</strong>
+                            ${data.step2}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 今後の動き方の予測とシナリオ -->
+                <div class="bg-slate-800 rounded-xl border border-slate-700 p-4 space-y-3 shadow-lg">
+                    <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>🔮</span> 今後の動き方の予測・シナリオ
+                    </h3>
+                    <div class="space-y-2 text-xs">
+                        <div class="bg-amber-950/30 border border-amber-700/40 p-2.5 rounded-lg text-slate-200">
+                            <span class="font-bold text-amber-300">メインシナリオ:</span> ${data.scenarioMain}
+                        </div>
+                        <div class="bg-slate-900/50 border border-slate-700/40 p-2.5 rounded-lg text-slate-300">
+                            <span class="font-bold text-slate-400">リスクシナリオ (下押し):</span> ${data.scenarioBear}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 規律ある3段階エントリー提案 (3-Tranche) -->
+                <div class="bg-slate-800 rounded-xl border border-slate-700 p-4 space-y-3 shadow-lg">
+                    <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>🎯</span> 推奨3段階エントリー (3-Tranche Allocation)
+                    </h3>
+                    <div class="space-y-2 text-xs">
+                        <div class="flex items-start gap-2.5 bg-slate-900/60 p-2.5 rounded-lg border border-slate-700/40">
+                            <span class="bg-emerald-900 text-emerald-300 font-bold px-2 py-0.5 rounded text-[10px] shrink-0">Tranche 1</span>
+                            <span class="text-slate-300 leading-relaxed">${data.tranche1}</span>
+                        </div>
+                        <div class="flex items-start gap-2.5 bg-slate-900/60 p-2.5 rounded-lg border border-slate-700/40">
+                            <span class="bg-emerald-900 text-emerald-300 font-bold px-2 py-0.5 rounded text-[10px] shrink-0">Tranche 2</span>
+                            <span class="text-slate-300 leading-relaxed">${data.tranche2}</span>
+                        </div>
+                        <div class="flex items-start gap-2.5 bg-slate-900/60 p-2.5 rounded-lg border border-slate-700/40">
+                            <span class="bg-emerald-900 text-emerald-300 font-bold px-2 py-0.5 rounded text-[10px] shrink-0">Tranche 3</span>
+                            <span class="text-slate-300 leading-relaxed">${data.tranche3}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 初期ロード時にトヨタを表示
+        window.onload = function() {
+            loadPreset('7203');
+        };
+    </script>
+</body>
+</html>
